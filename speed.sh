@@ -1,5 +1,10 @@
 #!/bin/bash
 
+command -v ifconfig &>/dev/null || {
+    echo "ifconfig not found"
+    exit
+}
+
 [ $# -eq 0 ] && {
     echo "usage: bash speed.sh [ifname]"
     exit
