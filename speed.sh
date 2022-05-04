@@ -31,8 +31,12 @@ while true; do
     sleep 1
     [ -z "$x1" ] || {
         clear
-        dl=$(echo "($x2-$x1)/1024" | bc)
-        ul=$(echo "($y2-$y1)/1024" | bc)
+        #dl=$(echo "($x2-$x1)/1024" | bc)
+        #ul=$(echo "($y2-$y1)/1024" | bc)
+        dl=$(expr $x2 - $x1)
+        dl=$(expr $dl / 1024)
+        ul=$(expr $y2 - $y1)
+        ul=$(expr $ul / 1024)
         echo "DL: ${dl}KB/s UL: ${ul}KB/s"
     }
 done
