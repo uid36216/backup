@@ -11,12 +11,10 @@ command -v ifconfig &>/dev/null || {
 }
 
 ifname=$1
-line=$(ifconfig | grep mtu | grep --color=none -n $ifname)
-[ $? -eq 0 ] || {
-    echo "ifname \"$ifname\" not found!"
+ifconfig | grep -q $ifname || {
+    echo "ifname \"$ifname\" not found"
     exit
 }
-ifid=${line::1}
 
 x1=
 x2=
@@ -25,10 +23,10 @@ y2=
 
 while true; do
     x1=$x2
-    x2=$(ifconfig | grep "RX packets" | sed -n ${ifid}p | awk '{print $5}')
+    x2=$(ifconfig $ifname | grep "RX packets" | awk '{print $5}')
     #echo "x1=$x1 x2=$x2"
     y1=$y2
-    y2=$(ifconfig | grep "TX packets" | sed -n ${ifid}p | awk '{print $5}')
+    y2=$(ifconfig $ifname | grep "TX packets" | awk '{print $5}')
     #echo "y1=$y1 y2=$y2"
     sleep 1
     [ -z "$x1" ] || {
