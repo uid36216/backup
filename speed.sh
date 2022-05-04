@@ -28,7 +28,6 @@ while true; do
     y1=$y2
     y2=$(ifconfig $ifname | grep "TX packets" | awk '{print $5}')
     #echo "y1=$y1 y2=$y2"
-    sleep 1
     [ -z "$x1" ] || {
         clear
         #dl=$(echo "($x2-$x1)/1024" | bc)
@@ -39,4 +38,5 @@ while true; do
         ul=$(expr $ul / 1024)
         echo "DL: ${dl}KB/s UL: ${ul}KB/s"
     }
+    sleep 1
 done
