@@ -3,17 +3,9 @@
 foo() {
   port=$1
   max=$2
+  [ -z "$max" ] && max=1
   chain=conn-limit-port-$port
 
-  iptables -vL -n | grep "Chain $chain" -q || {
-    iptables -N $chain
-  }
-
-  iptables -vL INPUT -n | grep "$chain" -q || {
-    iptables -A INPUT -j $chain
-  }
-
-  iptables -F $chain
   readarray -t arr < <(grep ":$port->" | grep "ESTABLISHED" | sed -e "s/^.*->\(.*\):.*$/\1/g" | sort -n | uniq)
   cnt=${#arr[@]}
   echo "$port: $cnt/$max [${arr[@]}]"
@@ -37,6 +29,20 @@ foo() {
   fi
 }
 
+ipt_setup() {
+  port=$1
+  chain=conn-limit-port-$port
+  iptables -vL -n | grep "Chain $chain" -q || {
+    iptables -N $chain
+  }
+
+  iptables -vL INPUT -n | grep "$chain" -q || {
+    iptables -A INPUT -j $chain
+  }
+
+  iptables -F $chain
+}
+
 finally() {
   echo "bye"
   readarray -t arr < <(iptables -vL -n  | grep "Chain conn-limit-port" | sed -e "s/^Chain \(.*\) (.*)$/\1/g")
@@ -50,11 +56,19 @@ finally() {
 
 trap finally EXIT
 
+[ $# -eq 0 ] && exit
+
+for s in $*; do
+  params=$(echo $s | sed "s/,/ /g")
+  ipt_setup $params
+done 
+
 while true; do
   clear
   lsof_str=$(lsof -i -n -P)
-  # echo "$lsof_str" | foo [port] [max]
-  echo "$lsof_str" | foo 4669 1
-  echo "$lsof_str" | foo 4668 1
+  for s in $*; do
+    params=$(echo $s | sed "s/,/ /g")
+    echo "$lsof_str" | foo $params
+  done
   sleep 1
 done
