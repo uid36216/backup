@@ -14,16 +14,16 @@ foo() {
   }
 
   iptables -F $chain
-  readarray -t arr < <(grep :$port | grep "ESTABLISHED" | sed -e "s/^.*->\(.*\):.*$/\1/g" | sort -n | uniq)
-
+  readarray -t arr < <(grep ":$port->" | grep "ESTABLISHED" | sed -e "s/^.*->\(.*\):.*$/\1/g" | sort -n | uniq)
   cnt=${#arr[@]}
+  echo "$port: $cnt/$max [${arr[@]}]"
+  
   if [ $cnt -ge $max ]; then
     iptables -vL $chain -n | grep "DROP" -q && {
       # already limited, skip
       return
     }
     # allow top $max IPs
-    echo "$port: $cnt/$max [${arr[@]}]"
     iptables -F $chain
     iptables -A $chain -s 127.0.0.1 -j ACCEPT
     iptables -A $chain -m state --state ESTABLISHED,RELATED -j ACCEPT
@@ -33,17 +33,28 @@ foo() {
     iptables -A $chain -p tcp --dport $port -j DROP
   else
     # allow all IPs
-    echo "$port: $cnt/$max [${arr[@]}]"
     iptables -F $chain
   fi
 }
 
+finally() {
+  echo "bye"
+  readarray -t arr < <(iptables -vL -n  | grep "Chain conn-limit-port" | sed -e "s/^Chain \(.*\) (.*)$/\1/g")
+  for i in ${arr[@]}; do
+    iptables -D INPUT -j $i 2>/dev/null
+    iptables -X $i 2>/dev/null
+  done
+}
+
 ##################################################################
+
+trap finally EXIT
 
 while true; do
   clear
   lsof_str=$(lsof -i -n -P)
   # echo "$lsof_str" | foo [port] [max]
-  echo "$lsof_str" | foo 6666 1
+  echo "$lsof_str" | foo 4669 1
+  echo "$lsof_str" | foo 4668 1
   sleep 1
 done
